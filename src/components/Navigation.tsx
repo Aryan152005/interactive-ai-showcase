@@ -1,14 +1,16 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Menu, X, Sun, Moon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useTheme } from "@/hooks/useTheme";
 
 export const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
+  const { theme, setTheme } = useTheme();
 
   useEffect(() => {
     // Get initial session
@@ -56,6 +58,12 @@ export const Navigation = () => {
             <Link to="/contact" className="hover:text-primary transition-colors">
               Contact
             </Link>
+            <button
+              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
             {user ? (
               <button
                 onClick={handleLogout}
@@ -106,6 +114,15 @@ export const Navigation = () => {
             >
               Contact
             </Link>
+            <button
+              onClick={() => {
+                setTheme(theme === "dark" ? "light" : "dark");
+                setIsOpen(false);
+              }}
+              className="w-full px-6 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
+            >
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            </button>
             {user ? (
               <button
                 onClick={() => {
