@@ -10,7 +10,7 @@ export const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     // Get initial session
@@ -59,7 +59,7 @@ export const Navigation = () => {
               Contact
             </Link>
             <button
-              onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+              onClick={toggleTheme}
               className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
             >
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
@@ -116,7 +116,7 @@ export const Navigation = () => {
             </Link>
             <button
               onClick={() => {
-                setTheme(theme === "dark" ? "light" : "dark");
+                toggleTheme();
                 setIsOpen(false);
               }}
               className="w-full px-6 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
