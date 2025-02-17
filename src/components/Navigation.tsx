@@ -1,65 +1,133 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
-import { Menu, X, Sun, Moon } from "lucide-react";
-import { useTheme } from "../hooks/useTheme";
+import { Link, useNavigate } from "react-router-dom";
+import { Menu, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
-  const { theme, toggleTheme } = useTheme();
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      toast.success("Successfully logged out");
+      navigate("/");
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "glass py-4" : "py-6"}`}>
+    <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-sm border-b border-white/10">
       <div className="container mx-auto px-6">
-        <div className="flex items-center justify-between">
+        <nav className="flex items-center justify-between h-20">
           <Link to="/" className="text-2xl font-bold">
-            AI<span className="text-primary">Lab</span>
+            AILab
           </Link>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-            <Link to="/about" className="hover:text-primary transition-colors">About</Link>
-            <Link to="/projects" className="hover:text-primary transition-colors">Projects</Link>
-            <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"
-            >
-              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
+            <Link to="/about" className="hover:text-primary transition-colors">
+              About
+            </Link>
+            <Link to="/projects" className="hover:text-primary transition-colors">
+              Projects
+            </Link>
+            <Link to="/contact" className="hover:text-primary transition-colors">
+              Contact
+            </Link>
+            {user ? (
+              <button
+                onClick={handleLogout}
+                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
-          <button 
+          <button
             className="md:hidden p-2"
             onClick={() => setIsOpen(!isOpen)}
           >
             {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-        </div>
+        </nav>
 
         {/* Mobile Navigation */}
         {isOpen && (
-          <div className="md:hidden glass mt-4 rounded-lg p-4 animate-fade-down">
-            <div className="flex flex-col gap-4">
-              <Link to="/" className="hover:text-primary transition-colors">Home</Link>
-              <Link to="/about" className="hover:text-primary transition-colors">About</Link>
-              <Link to="/projects" className="hover:text-primary transition-colors">Projects</Link>
-              <Link to="/contact" className="hover:text-primary transition-colors">Contact</Link>
-            </div>
+          <div className="md:hidden py-4 space-y-4 animate-fade-down">
+            <Link
+              to="/about"
+              className="block hover:text-primary transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              About
+            </Link>
+            <Link
+              to="/projects"
+              className="block hover:text-primary transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Projects
+            </Link>
+            <Link
+              to="/contact"
+              className="block hover:text-primary transition-colors"
+              onClick={() => setIsOpen(false)}
+            >
+              Contact
+            </Link>
+            {user ? (
+              <button
+                onClick={() => {
+                  handleLogout();
+                  setIsOpen(false);
+                }}
+                className="w-full px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+              >
+                Sign Out
+              </button>
+            ) : (
+              <Link
+                to="/auth"
+                className="block w-full px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors text-center"
+                onClick={() => setIsOpen(false)}
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         )}
       </div>
-    </nav>
+    </header>
   );
 };
