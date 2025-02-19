@@ -7,6 +7,8 @@ import { Toaster } from "sonner";
 import Index from "./pages/Index";
 import About from "./pages/About";
 import Projects from "./pages/Projects";
+import VideoAnalysis from "./pages/VideoAnalysis";
+import LiveFeed from "./pages/LiveFeed";
 import Contact from "./pages/Contact";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -20,6 +22,8 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/about" element={<About />} />
           <Route path="/projects" element={<Projects />} />
+          <Route path="/projects/video-analysis" element={<VideoAnalysis />} />
+          <Route path="/projects/live-feed" element={<LiveFeed />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="*" element={<NotFound />} />
