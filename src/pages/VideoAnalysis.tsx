@@ -20,14 +20,24 @@ const VideoAnalysis = () => {
 
     setIsUploading(true);
     try {
-      // Upload to Supabase storage
+      // Generate a unique filename
+      const timestamp = new Date().getTime();
       const fileExt = file.name.split('.').pop();
-      const fileName = `${Math.random()}.${fileExt}`;
+      const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+
+      // Upload to Supabase storage with explicit content type
       const { data, error } = await supabase.storage
         .from('videos')
-        .upload(fileName, file);
+        .upload(fileName, file, {
+          contentType: file.type,
+          cacheControl: '3600',
+          upsert: false
+        });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Storage error:', error);
+        throw new Error('Failed to upload video');
+      }
 
       // Get video URL
       const { data: { publicUrl } } = supabase.storage
@@ -43,14 +53,18 @@ const VideoAnalysis = () => {
         body: JSON.stringify({ videoUrl: publicUrl }),
       });
 
-      if (!response.ok) throw new Error('Failed to get predictions');
+      if (!response.ok) {
+        throw new Error('Failed to get predictions');
+      }
       
       const predictionData = await response.json();
       setPredictions(predictionData);
       toast.success('Analysis complete!');
 
     } catch (error: any) {
-      toast.error(error.message);
+      console.error('Upload error:', error);
+      toast.error(error.message || 'Failed to upload video');
+      setVideoUrl(null);
     } finally {
       setIsUploading(false);
     }
@@ -88,6 +102,7 @@ const VideoAnalysis = () => {
                 src={videoUrl}
                 controls
                 className="w-full rounded-lg"
+                playsInline
               />
             </div>
           )}
