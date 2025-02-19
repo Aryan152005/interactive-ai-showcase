@@ -7,6 +7,7 @@ import { useNavigate } from "react-router-dom";
 
 interface AnalysisHistory {
   id: string;
+  user_id: string;
   video_name: string;
   video_path: string;
   prediction_results: any;
@@ -58,7 +59,7 @@ const VideoAnalysis = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setHistory(data);
+      setHistory(data || []);
     } catch (error: any) {
       console.error('Error loading history:', error);
       toast.error('Failed to load analysis history');
@@ -129,7 +130,7 @@ const VideoAnalysis = () => {
   };
 
   if (!user) {
-    return null; // Or a loading spinner
+    return null;
   }
 
   return (
