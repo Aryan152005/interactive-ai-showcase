@@ -1,13 +1,69 @@
 
-import { useState } from "react";
-import { Upload, AlertCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Upload, AlertCircle, History } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
+
+interface AnalysisHistory {
+  id: string;
+  video_name: string;
+  video_path: string;
+  prediction_results: any;
+  created_at: string;
+}
 
 const VideoAnalysis = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [predictions, setPredictions] = useState<any>(null);
   const [videoUrl, setVideoUrl] = useState<string | null>(null);
+  const [history, setHistory] = useState<AnalysisHistory[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Check authentication
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session) {
+        toast.error("Please sign in to access this feature");
+        navigate("/auth");
+        return;
+      }
+      setUser(session.user);
+    });
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        navigate("/auth");
+        return;
+      }
+      setUser(session.user);
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate]);
+
+  useEffect(() => {
+    if (user) {
+      loadHistory();
+    }
+  }, [user]);
+
+  const loadHistory = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('video_analysis')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setHistory(data);
+    } catch (error: any) {
+      console.error('Error loading history:', error);
+      toast.error('Failed to load analysis history');
+    }
+  };
 
   const handleUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -20,12 +76,10 @@ const VideoAnalysis = () => {
 
     setIsUploading(true);
     try {
-      // Generate a unique filename
       const timestamp = new Date().getTime();
       const fileExt = file.name.split('.').pop();
       const fileName = `${timestamp}-${Math.random().toString(36).substring(7)}.${fileExt}`;
 
-      // Upload to Supabase storage with explicit content type
       const { data, error } = await supabase.storage
         .from('videos')
         .upload(fileName, file, {
@@ -39,18 +93,19 @@ const VideoAnalysis = () => {
         throw new Error('Failed to upload video');
       }
 
-      // Get video URL
       const { data: { publicUrl } } = supabase.storage
         .from('videos')
         .getPublicUrl(fileName);
       
       setVideoUrl(publicUrl);
 
-      // Call model prediction endpoint
-      const response = await fetch('/api/predict-video', {
+      const response = await fetch('http://localhost:5000/api/predict-video', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ videoUrl: publicUrl }),
+        body: JSON.stringify({ 
+          videoUrl: publicUrl,
+          userId: user.id 
+        }),
       });
 
       if (!response.ok) {
@@ -60,6 +115,9 @@ const VideoAnalysis = () => {
       const predictionData = await response.json();
       setPredictions(predictionData);
       toast.success('Analysis complete!');
+      
+      // Reload history after successful analysis
+      await loadHistory();
 
     } catch (error: any) {
       console.error('Upload error:', error);
@@ -69,6 +127,10 @@ const VideoAnalysis = () => {
       setIsUploading(false);
     }
   };
+
+  if (!user) {
+    return null; // Or a loading spinner
+  }
 
   return (
     <div className="container mx-auto px-6 py-12">
@@ -117,7 +179,31 @@ const VideoAnalysis = () => {
           )}
         </div>
 
-        <div className="text-center text-sm text-gray-600 dark:text-gray-400">
+        {/* Analysis History */}
+        <div className="glass p-8 rounded-lg">
+          <h2 className="text-2xl font-semibold mb-6 flex items-center gap-2">
+            <History size={24} />
+            Analysis History
+          </h2>
+          
+          <div className="space-y-4">
+            {history.map((item) => (
+              <div key={item.id} className="p-4 rounded-lg bg-background">
+                <h4 className="font-medium mb-2">{item.video_name}</h4>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Analyzed on: {new Date(item.created_at).toLocaleDateString()}
+                </p>
+                <div className="mt-2">
+                  <pre className="text-sm whitespace-pre-wrap">
+                    {JSON.stringify(item.prediction_results, null, 2)}
+                  </pre>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="text-center text-sm text-gray-600 dark:text-gray-400 mt-8">
           <div className="flex items-center justify-center gap-2">
             <AlertCircle size={16} />
             <span>Supported formats: MP4, WebM, MOV</span>
