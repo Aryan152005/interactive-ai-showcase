@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Menu, X, Sun, Moon } from "lucide-react";
+import { Menu, X, Sun, Moon, User } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useTheme } from "@/hooks/useTheme";
@@ -44,7 +44,7 @@ export const Navigation = () => {
       <div className="container mx-auto px-6">
         <nav className="flex items-center justify-between h-20">
           <Link to="/" className="text-2xl font-bold">
-            AILab
+            Sitnovate
           </Link>
 
           {/* Desktop Navigation */}
@@ -65,12 +65,20 @@ export const Navigation = () => {
               {theme === "dark" ? <Sun size={20} /> : <Moon size={20} />}
             </button>
             {user ? (
-              <button
-                onClick={handleLogout}
-                className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
-              >
-                Sign Out
-              </button>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <User size={20} className="text-primary" />
+                  <span className="text-sm font-medium">
+                    {user.user_metadata.username || user.email}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+                >
+                  Sign Out
+                </button>
+              </div>
             ) : (
               <Link
                 to="/auth"
@@ -124,15 +132,23 @@ export const Navigation = () => {
               {theme === "dark" ? "Light Mode" : "Dark Mode"}
             </button>
             {user ? (
-              <button
-                onClick={() => {
-                  handleLogout();
-                  setIsOpen(false);
-                }}
-                className="w-full px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
-              >
-                Sign Out
-              </button>
+              <>
+                <div className="flex items-center gap-2 px-6 py-2">
+                  <User size={20} className="text-primary" />
+                  <span className="text-sm font-medium">
+                    {user.user_metadata.username || user.email}
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    handleLogout();
+                    setIsOpen(false);
+                  }}
+                  className="w-full px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-hover transition-colors"
+                >
+                  Sign Out
+                </button>
+              </>
             ) : (
               <Link
                 to="/auth"
